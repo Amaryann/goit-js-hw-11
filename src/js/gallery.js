@@ -42,6 +42,9 @@ export const renderImage = (object) => {
 export const catchError = () => {
     Notiflix.Notify.failure("Sorry, there are no images matching your search query. Please try again.");
 }
+const showQueueEnd = () => {
+  Notiflix.Notify.warning("We're sorry, but you've reached the end of search results.");
+}
 export const search = (insertMethod) => {
     loadMore.hidden = true;
     localStorage.setItem("pageCount", 1); 
@@ -54,7 +57,8 @@ export const search = (insertMethod) => {
             }
             Notiflix.Notify.success(`Hooray! We found ${result.data.totalHits} images.`)
             let markup = renderImage(result.data.hits);
-            elements["gallery"].insertAdjacentHTML(insertMethod, markup)
+            elements["gallery"].innerHTML = "";
+            elements["gallery"].insertAdjacentHTML(insertMethod, markup);
             elements["loadMore"].hidden = false;
         })
         .catch(
@@ -63,3 +67,27 @@ export const search = (insertMethod) => {
             }
         )
     }
+    export const searchLoadMore = (insertMethod) => {
+      loadMore.hidden = true;
+      let oldPageCount = Number(localStorage.getItem("pageCount"));
+      localStorage.setItem("pageCount", oldPageCount+1); 
+      let pageCount = localStorage.getItem("pageCount");
+      fetchImages(pageCount, elements["searchBar"]).then(
+          (result) => {
+              if (result.data.hits.length == 0){
+                  showQueueEnd();
+                  elements["gallery"].innerHTML = "";
+                  localStorage.setItem("pageCount", oldPageCount);
+                  return
+              }
+              Notiflix.Notify.success(`Hooray! We found ${result.data.totalHits} images.`)
+              let markup = renderImage(result.data.hits);
+              elements["gallery"].insertAdjacentHTML(insertMethod, markup)
+              elements["loadMore"].hidden = false;
+          })
+          .catch(
+              ()=>{
+                  catchError();
+              }
+          )
+      }
